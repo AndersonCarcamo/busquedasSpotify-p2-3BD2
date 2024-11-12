@@ -42,18 +42,36 @@ class SPIMI:
 
     def parse_docs(self, doc):
         words = []
-        col_text = ['lyrics', 'track_name', 'track_artist', 'track_album_name', 'playlist_name', 'playlist_genre', 'playlist_subgenre']
-        texto = ' '.join(doc[col] for col in col_text).lower()
-        texto = re.sub(r'[^a-zA-Z0-9_À-ÿ]', ' ', texto)
+        col_text = [
+            'lyrics', 'track_name', 'track_artist', 
+            'track_album_name', 'playlist_name', 
+            'playlist_genre', 'playlist_subgenre'
+        ]
         
-        ln = 'spanish' if doc['language'] == 'es' else 'english'
+        # Asegurarse de que los valores son cadenas y unirlos
+        texto = ' '.join(str(doc[col]) if isinstance(doc[col], str) else '' for col in col_text).lower()
+        texto = re.sub(r'[^a-zA-Z0-9_À-ÿ]', ' ', texto)
+
+        # Diccionario para mapear los códigos de idioma al idioma de SnowballStemmer y stopwords
+        language_map = {
+            'es': 'spanish',
+            'en': 'english',
+            'fr': 'french',
+            'de': 'german',
+            'it': 'italian'
+            # Agrega más idiomas según sea necesario
+        }
+
+        # Asigna el idioma o usa inglés como predeterminado si no se reconoce el código
+        ln = language_map.get(doc.get('language', 'en'), 'english')
+        
         for word in texto.split():
             if word not in stopwords.words(ln):
                 words.append(word)
 
         stemmer = SnowballStemmer(language=ln)
         return [stemmer.stem(word) for word in words]
-
+    
     def write_block_to_disk(self, dictionary, block_id):
         output_file = f"{self.path_block}block_{block_id}.txt"
         with open(output_file, 'w') as f:
