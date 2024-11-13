@@ -4,12 +4,14 @@ from Parser import MusicSearch  # Asegúrate de importar tu clase MusicSearch aq
 
 block_folder = './blocks/'
 
+ALL_COLUMNS = ["title", "artist", "album", "lyrics", "popularity", "release_date" , "playlist_name" , "album_date" ]
+
 class MusicSearchApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Music Search")
         self.root.configure(background="#282828")
-        self.root.geometry("800x600")
+        self.root.geometry("1000x700")
 
 
         # Estilos de colores y fuentes
@@ -28,17 +30,9 @@ class MusicSearchApp:
         query_frame = tk.Frame(root, bg=bg_color)
         query_frame.pack(pady=15, fill=tk.X, padx=15)
         
-        tk.Label(query_frame, text="Enter Query:", font=title_font, bg=bg_color, fg=fg_color).pack(side=tk.LEFT, padx=5)
+        tk.Label(query_frame, text="Enter Query:", font=title_font, bg=bg_color, fg=fg_color).pack(side=tk.LEFT, padx=10)
         self.query_entry = tk.Entry(query_frame, width=50, bg=entry_color, fg=fg_color, font=font_style)
-        self.query_entry.pack(side=tk.LEFT, padx=10)
-
-        # Entrada para el valor de K
-        k_frame = tk.Frame(root, bg=bg_color)
-        k_frame.pack(pady=5, fill=tk.X, padx=15)
-
-        tk.Label(k_frame, text="Enter number of results (K):", font=title_font, bg=bg_color, fg=fg_color).pack(side=tk.LEFT, padx=5)
-        self.k_entry = tk.Entry(k_frame, width=10, bg=entry_color, fg=fg_color, font=font_style, justify="left")
-        self.k_entry.pack(side=tk.LEFT, padx=10)
+        self.query_entry.pack(side=tk.LEFT, padx=(10, 20), fill=tk.X, expand=True)
 
         # Botón para realizar la búsqueda
         self.search_button = tk.Button(root, text="Search", command=self.perform_search, bg=button_color, fg=fg_color, font=title_font)
@@ -60,7 +54,7 @@ class MusicSearchApp:
         example_frame = tk.Frame(root, bg="#282828")
         example_frame.pack(pady=(10, 20))
 
-        example_text = "Copie y pegue este ejemplo: select title, artist , lyrics from Audio where content liketo 'yea you just can't walk away"
+        example_text = "Copie y pegue este ejemplo: select * lyrics from Audio where content liketo 'yea you just can't walk away' limit 5"
         self.example_label = tk.Label(example_frame, text=example_text, font=("Arial", 10), bg="#282828", fg="#bbbbbb")
         self.example_label.pack(side=tk.LEFT)
 
@@ -74,20 +68,20 @@ class MusicSearchApp:
 
     def perform_search(self):
         query = self.query_entry.get()
-        k = self.k_entry.get()
 
-        if not query.strip():
-            messagebox.showwarning("Input Error", "Please enter a query.")
+        if not query:
+            messagebox.showerror("Error", "Por favor, ingrese una consulta.")
             return
-        if not k.strip():
-            messagebox.showwarning("Input Error", "Please enter a value for K.")
-            return
-        k = int(k)
+        
 
         # Realizar la búsqueda
-        results = self.search_engine.search(query, top_k=k)
+        results = self.search_engine.search(query)
         parsed_query = self.search_engine.queryparser.parse_query(query)
         selected_columns = parsed_query['columns']
+
+    
+        if '*' in selected_columns:
+            selected_columns = ALL_COLUMNS
 
         # Limpiar las columnas previas
         self.results_tree.delete(*self.results_tree.get_children())
@@ -109,7 +103,7 @@ class MusicSearchApp:
         else:
             self.results_tree.insert("", tk.END, values=["No results found."] * len(selected_columns))
     def copy_example_to_clipboard(self):
-        example_text = "SELECT title, artist FROM Audio WHERE content LIKETO 'yea you just can't walk away'"
+        example_text = "SELECT * FROM Audio WHERE content LIKETO 'yea you just cant walk away' limit 5"
         self.root.clipboard_clear()  # Limpiar el portapapeles
         self.root.clipboard_append(example_text)  # Agregar el texto al portapapeles
         messagebox.showinfo("Copiado", "Texto de ejemplo copiado al portapapeles.")
