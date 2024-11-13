@@ -83,8 +83,8 @@ class MusicSearch:
         return filter_results
 
 
-# Prueba del parser
-query = "select title from Audio where content liketo 'yea you just cant walk away' limit 1"
+'''# Prueba del parser
+query = "select title from Audio where content liketo 'yea you just cant walk away' limit 5"
 
 block_folder = './blocks/'
 
@@ -93,3 +93,4 @@ search_engine = MusicSearch(block_folder)
 search_results = search_engine.search(query)
 print("Top K documentos más similares:")
 print(search_results)
+'''
