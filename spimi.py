@@ -59,7 +59,6 @@ class SPIMI:
             'fr': 'french',
             'de': 'german',
             'it': 'italian'
-            # Agrega más idiomas según sea necesario
         }
 
         # Asigna el idioma o usa inglés como predeterminado si no se reconoce el código
