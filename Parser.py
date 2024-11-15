@@ -58,7 +58,8 @@ class MusicSearch:
 
         # Realizar la búsqueda usando el valor de LIMIT
         results = self.invert_index.get_top_k_similar_documents(search_text, k=limit)
-        tiempo_ejecucion = time.time() - start_time
+        tiempo_ejecucion = (time.time() - start_time) * 1000 
+
         
         # Filtrar los resultados según las columnas solicitadas
         columns = ALL_COLUMNS if '*' in parsed_query["columns"] else parsed_query["columns"]

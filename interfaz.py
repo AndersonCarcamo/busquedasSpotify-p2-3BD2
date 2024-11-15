@@ -59,7 +59,7 @@ class MusicSearchApp:
         example_frame = tk.Frame(root, bg="#282828")
         example_frame.pack(pady=(10, 20))
 
-        example_text = "Copie y pegue este ejemplo: select * lyrics from Audio where content liketo 'yea you just can't walk away' limit 5"
+        example_text = "Copie y pegue este ejemplo: select * lyrics from Audio where content liketo 'yea you just can't walk away' limit 10"
         self.example_label = tk.Label(example_frame, text=example_text, font=("Arial", 10), bg="#282828", fg="#bbbbbb")
         self.example_label.pack(side=tk.LEFT)
 
@@ -86,7 +86,7 @@ class MusicSearchApp:
         selected_columns = parsed_query["columns"]
 
         # Mostrar el tiempo de ejecución
-        self.time_label.config(text=f"Tiempo de ejecución: {tiempo_ejecucion:.4f} segundos")
+        self.time_label.config(text=f"Tiempo de ejecución: {tiempo_ejecucion:.4f} milisegundos")
     
         if '*' in selected_columns:
             selected_columns = ALL_COLUMNS
@@ -111,7 +111,7 @@ class MusicSearchApp:
         else:
             self.results_tree.insert("", tk.END, values=["No results found."] * len(selected_columns))
     def copy_example_to_clipboard(self):
-        example_text = "SELECT * FROM Audio WHERE content LIKETO 'yea you just cant walk away' limit 5"
+        example_text = "SELECT * FROM Audio WHERE content LIKETO 'yea you just cant walk away' limit 10"
         self.root.clipboard_clear()  # Limpiar el portapapeles
         self.root.clipboard_append(example_text)  # Agregar el texto al portapapeles
         messagebox.showinfo("Copiado", "Texto de ejemplo copiado al portapapeles.")
