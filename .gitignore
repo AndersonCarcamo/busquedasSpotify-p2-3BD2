@@ -56,10 +56,7 @@ cover/
 *.pot
 
 # carpetas
-./blocks/*
-./.temp/*
-./.temp1/*
-./blocks1/*
+
 
 # Django stuff:
 *.log
