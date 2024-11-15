@@ -34,20 +34,22 @@ La GUI está diseñada para ser intuitiva y funcional, mejorando la experiencia 
 Se realizaron pruebas de rendimiento comparando el tiempo de respuesta de esta implementación en Python con el de PostgreSQL en consultas sobre diferentes tamaños de datos, con valores de N que varían entre 1,000 y 10,000.
 
 ### Resultados de la Comparación
-| Tamaño de N | Tiempo (ms) - Índice Invertido (Python) | Tiempo (ms) - PostgreSQL |
-|-------------|----------------------------------------|--------------------------|
-| 1000        | X ms                                   | Y ms                     |
-| 2000        | X ms                                   | Y ms                     |
-| 3000        | X ms                                   | Y ms                     |
-| 4000        | X ms                                   | Y ms                     |
-| 5000        | X ms                                   | Y ms                     |
-| 6000        | X ms                                   | Y ms                     |
-| 7000        | X ms                                   | Y ms                     |
-| 8000        | X ms                                   | Y ms                     |
-| 9000        | X ms                                   | Y ms                     |
-| 10000       | X ms                                   | Y ms                     |
 
-Los resultados muestran cómo varía el rendimiento a medida que aumenta el tamaño de los datos.
+| Tamaño de N | Tiempo (ms) - Índice Invertido (Python)| Tiempo GIN (ms) - PostgreSQL | Tiempo GIST (ms) - PostgreSQL | 
+|-------------|----------------------------------------|------------------------------|-------------------------------|
+| 1000        | X ms                                   | 0.245 ms                     | 197.937 ms                    |
+| 5000        | X ms                                   | 0.575 ms                     | 894.740 ms                    |
+| 10000       | X ms                                   | 1.169 ms                     | 1756.667 ms                   |
+| 18000       | X ms                                   | 2.507 ms                     | 3226.991 ms                   |
+
+![alt text](image.png)
+
+En los resultados obtenidos, el índice GIN muestra tiempos de respuesta mucho menores en comparación con GIST. A medida que aumenta el tamaño de la tabla (cantidad de canciones), los tiempos de consulta con GIN se mantienen bajos, mientras que GIST presenta un incremento lineal en los tiempos de ejecución.
+
+- Índice GIN: Es eficiente para consultas de texto completo debido a su estructura de índice invertido, permitiendo búsquedas rápidas en grandes volúmenes de texto. PostgreSQL utiliza un Bitmap Index Scan para este índice, optimizando aún más las búsquedas con múltiples términos.
+
+- Índice GIST: Aunque es versátil, no es adecuado para búsquedas de texto completo en grandes volúmenes de datos. No utiliza un índice invertido ni un Bitmap Index Scan, lo que resulta en tiempos de ejecución más altos.
+
 
 ## 5. Conclusiones
 Este proyecto demuestra la eficiencia y flexibilidad de un índice invertido en Python para realizar búsquedas de texto en una base de datos de letras de canciones. Si bien PostgreSQL ofrece ventajas en términos de optimización avanzada, la implementación de este índice invertido permite un control más detallado sobre las consultas y la estructura de datos.
