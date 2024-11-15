@@ -120,14 +120,13 @@ class CosineSimilaritySearch:
         query_vector = self.calculate_query_vector(query_terms, df_dict, num_docs)
         doc_scores = self.cosine_similarity(query_vector, term_postings)
         
-        # Obtener los k documentos más similares
+        # Obtener los k documentos mas similares
         top_k_docs = doc_scores[:k]
-        top_k_indices = [doc_id for doc_id, _ in top_k_docs]  # Obtén solo los índices de los documentos 
-        # Obtener los datos de los documentos más similares con sus metadatos
+        top_k_indices = [doc_id for doc_id, _ in top_k_docs]  # Obtén solo los indices de los documentos 
+        # Obtener los datos de los documentos mas similares con sus metadatos
         top_k_data = data.iloc[top_k_indices][['track_name', 'track_artist', 'lyrics' ,'track_popularity' ,'track_album_name' ,'track_album_release_date' , 'playlist_name']].copy()
-        top_k_data['Cosine Similarity Score'] = [score for _, score in top_k_docs]  # Agregar las puntuaciones
+        top_k_data['Cosine_Similarity_Score'] = [score for _, score in top_k_docs]  # Agregar las puntuaciones
 
-        # Crear el DataFrame con índice 1, 2, ..., k
         top_k_data.index = range(1, k + 1)
         return top_k_data
 
@@ -139,13 +138,13 @@ class CosineSimilaritySearch:
         return self.cosine_similarity(query_vector, term_postings)
 
 
-
-'''block_folder = './blocks/'
+'''
+block_folder = './blocks/'
 search_engine = CosineSimilaritySearch(block_folder)
 results_df = search_engine.get_top_k_similar_documents("yea you just can't walk away", k=5)
 print("Top K documentos más similares:")
-print(results_df)'''
-
+print(results_df)
+'''
 '''
 k = 5 
 

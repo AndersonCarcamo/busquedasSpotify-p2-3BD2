@@ -1,7 +1,8 @@
 from pyparsing import Word, alphas, Group, CaselessLiteral, quotedString, delimitedList, alphanums, Or, Literal, Optional, nums , Suppress
 from test import CosineSimilaritySearch
+import time 
 
-ALL_COLUMNS = ["lyrics", "title", "artist", "album", "popularity", "release_date", "playlist_name", "album_date"]
+ALL_COLUMNS = ["lyrics", "title", "artist", "album", "popularity", "release_date", "playlist_name", "album_date" , "Similarity"]
 
 class QueryParser:
     def __init__(self):
@@ -47,6 +48,8 @@ class MusicSearch:
         self.queryparser = QueryParser()
 
     def search(self, query):
+        start_time = time.time()
+
         parsed_query = self.queryparser.parse_query(query)
         search_text = parsed_query["query"].strip("'")
 
@@ -55,6 +58,7 @@ class MusicSearch:
 
         # Realizar la búsqueda usando el valor de LIMIT
         results = self.invert_index.get_top_k_similar_documents(search_text, k=limit)
+        tiempo_ejecucion = time.time() - start_time
         
         # Filtrar los resultados según las columnas solicitadas
         columns = ALL_COLUMNS if '*' in parsed_query["columns"] else parsed_query["columns"]
@@ -78,13 +82,17 @@ class MusicSearch:
                 filtered_result["playlist_name"] = result.playlist_name
             if "album_date" in columns:
                 filtered_result["album_date"] = result.track_album_release_date
+            if "Similarity" in columns:
+                filtered_result["Similarity"] = result.Cosine_Similarity_Score
+            
             filter_results.append(filtered_result)
 
-        return filter_results
+
+        return filter_results , tiempo_ejecucion
 
 
 '''# Prueba del parser
-query = "select title from Audio where content liketo 'yea you just cant walk away' limit 5"
+query = "select Similarity from Audio where content liketo 'yea you just can't walk away' limit 1"
 
 block_folder = './blocks/'
 

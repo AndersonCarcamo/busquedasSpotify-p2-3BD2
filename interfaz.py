@@ -1,10 +1,11 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from Parser import MusicSearch  # Asegúrate de importar tu clase MusicSearch aquí
+import time 
 
 block_folder = './blocks/'
 
-ALL_COLUMNS = ["title", "artist", "album", "lyrics", "popularity", "release_date" , "playlist_name" , "album_date" ]
+ALL_COLUMNS = ["title", "artist", "album", "lyrics", "popularity", "release_date" , "playlist_name" , "album_date" , "Similarity"]
 
 class MusicSearchApp:
     def __init__(self, root):
@@ -50,6 +51,10 @@ class MusicSearchApp:
         
         self.results_tree.configure(yscrollcommand=self.scroll_y.set, xscrollcommand=self.scroll_x.set)
 
+        # Label para mostrar tiempo de ejecución
+        self.time_label = tk.Label(root, text="", font=("Arial", 10), bg="#282828", fg="#ffffff")
+        self.time_label.pack(pady=10)
+
         # Crear Frame para el texto de ejemplo y el botón de copiar
         example_frame = tk.Frame(root, bg="#282828")
         example_frame.pack(pady=(10, 20))
@@ -57,6 +62,7 @@ class MusicSearchApp:
         example_text = "Copie y pegue este ejemplo: select * lyrics from Audio where content liketo 'yea you just can't walk away' limit 5"
         self.example_label = tk.Label(example_frame, text=example_text, font=("Arial", 10), bg="#282828", fg="#bbbbbb")
         self.example_label.pack(side=tk.LEFT)
+
 
         # Botón de copiar
         self.copy_button = tk.Button(example_frame, text="Copiar", command=self.copy_example_to_clipboard, bg="#336699", fg="#ffffff", font=("Arial", 10))
@@ -75,10 +81,12 @@ class MusicSearchApp:
         
 
         # Realizar la búsqueda
-        results = self.search_engine.search(query)
+        results , tiempo_ejecucion = self.search_engine.search(query)
         parsed_query = self.search_engine.queryparser.parse_query(query)
-        selected_columns = parsed_query['columns']
+        selected_columns = parsed_query["columns"]
 
+        # Mostrar el tiempo de ejecución
+        self.time_label.config(text=f"Tiempo de ejecución: {tiempo_ejecucion:.4f} segundos")
     
         if '*' in selected_columns:
             selected_columns = ALL_COLUMNS
