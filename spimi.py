@@ -31,9 +31,9 @@ class PostingBlock:
 
 
 class SPIMI:
-    def __init__(self, size_per_block=10240*4, output_folder='./blocks/', ram_limit = 1024*1024*1024, size_per_block_out = 1024*5.9):
+    def __init__(self, size_per_block=10240*4, path_block = './.temp/', output_folder='./blocks/', ram_limit = 1024*1024*1024, size_per_block_out = 1024*5.9):
         self.size_per_block = size_per_block
-        self.path_block = './.temp/'
+        self.path_block = path_block
         self.global_dictionary = SortedDict()
         self.global_block_size = 0
         self.output_folder = output_folder
@@ -186,19 +186,21 @@ class SPIMI:
                 found = False
                 for i, (existing_term, existing_df, existing_file_id, existing_posting_block) in enumerate(heap):
                     if existing_term == term:
-                        existing_df += df
+                        # existing_df += df
                         current_block = existing_posting_block
                         while current_block.next_block:
                             current_block = current_block.next_block
-                        if current_block.is_full():
-                            current_block.next_block = posting_block
-                        else:
-                            for doc, tf in posting_block.doc_dict.items():
+                        
+                        for doc, tf in posting_block.doc_dict.items():
+                            if doc in current_block.doc_dict:
+                                current_block.doc_dict[doc] += tf
+                            else:
                                 if current_block.is_full():
                                     new_block = PostingBlock()
                                     current_block.next_block = new_block
                                     current_block = new_block
                                 current_block.add_doc(doc, tf)
+                                existing_df += 1
                         heap[i] = (existing_term, existing_df, existing_file_id, existing_posting_block)
                         found = True
                         break
@@ -220,15 +222,17 @@ class SPIMI:
                 current_block = existing_posting_block
                 while current_block.next_block:
                     current_block = current_block.next_block
-                if current_block.is_full():
-                    current_block.next_block = posting_block
-                else:
-                    for doc, tf in posting_block.doc_dict.items():
+                
+                for doc, tf in posting_block.doc_dict.items():
+                    if doc in current_block.doc_dict:
+                        current_block.doc_dict[doc] += tf
+                    else:
                         if current_block.is_full():
                             new_block = PostingBlock()
                             current_block.next_block = new_block
                             current_block = new_block
                         current_block.add_doc(doc, tf)
+                        existing_df += 1
                 additional_postings_size = len(', '.join([f"({doc}, {tf})" for doc, tf in posting_block.doc_dict.items()]))
                 current_output_size += additional_postings_size
             else:
@@ -267,15 +271,18 @@ class SPIMI:
                             current_block = existing_posting_block
                             while current_block.next_block:
                                 current_block = current_block.next_block
-                            if current_block.is_full():
-                                current_block.next_block = posting_block
-                            else:
-                                for doc, tf in posting_block.doc_dict.items():
+
+                            for doc, tf in posting_block.doc_dict.items():
+                                if doc in current_block.doc_dict:
+                                    current_block.doc_dict[doc] += tf
+                                else:
+                                    
                                     if current_block.is_full():
                                         new_block = PostingBlock()
                                         current_block.next_block = new_block
                                         current_block = new_block
                                     current_block.add_doc(doc, tf)
+                                    existing_df += 1
                             heap[i] = (existing_term, existing_df, existing_file_id, existing_posting_block)
                             found = True
                             break
@@ -317,5 +324,5 @@ class SPIMI:
             self.global_block_size = 0
 
         f = self.MergeBlocks(f)
-        shutil.rmtree(self.path_block)
+        # shutil.rmtree(self.path_block)
         return f
