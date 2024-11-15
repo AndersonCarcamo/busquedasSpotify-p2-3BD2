@@ -300,7 +300,6 @@ class SPIMI:
 
         return merged_files
 
-
     def BSBIndexConstuction(self, data):
 
         if not os.path.exists(self.path_block):
@@ -324,5 +323,5 @@ class SPIMI:
             self.global_block_size = 0
 
         f = self.MergeBlocks(f)
-        # shutil.rmtree(self.path_block)
+        shutil.rmtree(self.path_block)
         return f
