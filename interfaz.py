@@ -3,9 +3,8 @@ from tkinter import messagebox, ttk
 from Parser import MusicSearch  # Asegúrate de importar tu clase MusicSearch aquí
 import time 
 
-block_folder = './blocks/'
-
-ALL_COLUMNS = ["title", "artist", "album", "lyrics", "popularity", "release_date" , "playlist_name" , "album_date" , "Similarity"]
+ALL_BLOCKS = ["blocks1000", "blocks5000", "blocks10000", "blocks18000"]
+ALL_COLUMNS = ["title", "artist", "lyrics", "similarity"]
 
 class MusicSearchApp:
     def __init__(self, root):
@@ -26,6 +25,26 @@ class MusicSearchApp:
         # Título de la aplicación
         title_label = tk.Label(root, text="Búsqueda SPIMI", font=("Arial", 18, "bold"), bg="#282828", fg="#ffffff")
         title_label.pack(pady=(15, 10))
+
+        block_frame = tk.Frame(root, bg=bg_color)
+        block_frame.pack(pady=(10, 10), fill=tk.X, padx=15)
+
+        # Selección de carpeta de bloques
+        tk.Label(block_frame, text="Seleccione bloques:", font=title_font, bg=bg_color, fg=fg_color).pack(side=tk.LEFT, padx=5)
+        self.block_var = tk.StringVar(value=ALL_BLOCKS[0])  # Valor inicial: "blocks1000"
+
+        for block in ALL_BLOCKS:
+            tk.Radiobutton(
+                block_frame, 
+                text=block, 
+                variable=self.block_var, 
+                value=block, 
+                command=self.change_blocks, 
+                bg=bg_color, 
+                fg=fg_color, 
+                selectcolor=entry_color, 
+                font=font_style
+            ).pack(side=tk.LEFT, padx=5)
 
         # Crear entrada para la consulta
         query_frame = tk.Frame(root, bg=bg_color)
@@ -59,7 +78,7 @@ class MusicSearchApp:
         example_frame = tk.Frame(root, bg="#282828")
         example_frame.pack(pady=(10, 20))
 
-        example_text = "Copie y pegue este ejemplo: select * lyrics from Audio where content liketo 'yea you just can't walk away' limit 10"
+        example_text = "Copie y pegue este ejemplo: select * from Audio where content liketo 'mayor que yo' limit 5"
         self.example_label = tk.Label(example_frame, text=example_text, font=("Arial", 10), bg="#282828", fg="#bbbbbb")
         self.example_label.pack(side=tk.LEFT)
 
@@ -69,7 +88,12 @@ class MusicSearchApp:
         self.copy_button.pack(side=tk.LEFT, padx=(10, 0))
 
         # Conectar con el motor de búsqueda
-        self.search_engine = MusicSearch()
+        self.search_engine = MusicSearch("./blocks1000/")
+    def change_blocks(self):
+        """Cambia la carpeta de bloques activos en el motor de búsqueda."""
+        selected_block_folder = self.block_var.get()
+        self.search_engine = MusicSearch(f"./{selected_block_folder}/")
+        #messagebox.showinfo("Cambio de bloques", f"Ahora estás usando los bloques de: {selected_block_folder}")
 
 
     def perform_search(self):
@@ -103,6 +127,7 @@ class MusicSearchApp:
             self.results_tree.heading(col, text=col.capitalize())
             self.results_tree.column(col, anchor=tk.W, width=150)
 
+        print(results)
         # Insertar los resultados
         if results:
             for result in results:
@@ -111,10 +136,9 @@ class MusicSearchApp:
         else:
             self.results_tree.insert("", tk.END, values=["No results found."] * len(selected_columns))
     def copy_example_to_clipboard(self):
-        example_text = "SELECT * FROM Audio WHERE content LIKETO 'yea you just cant walk away' limit 10"
+        example_text = "select * from Audio where content liketo 'mayor que yo' limit 5"
         self.root.clipboard_clear()  # Limpiar el portapapeles
         self.root.clipboard_append(example_text)  # Agregar el texto al portapapeles
-        messagebox.showinfo("Copiado", "Texto de ejemplo copiado al portapapeles.")
 
 # Inicializar la aplicación
 root = tk.Tk()

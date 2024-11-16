@@ -1,8 +1,9 @@
 from pyparsing import Word, alphas, Group, CaselessLiteral, quotedString, delimitedList, alphanums, Or, Literal, Optional, nums , Suppress
-from test import CosineSimilaritySearch
+from test import CosineSimilaritySearch , data
 import time 
+import pandas as pd
 
-ALL_COLUMNS = ["lyrics", "title", "artist", "album", "popularity", "release_date", "playlist_name", "album_date" , "Similarity"]
+ALL_COLUMNS = ["title", "artist", "lyrics", "similarity"]
 
 class QueryParser:
     def __init__(self):
@@ -43,8 +44,8 @@ class QueryParser:
 
 # Clase de búsqueda
 class MusicSearch:
-    def __init__(self, block_folder='./blocks/'):
-        self.invert_index = CosineSimilaritySearch(block_folder)
+    def __init__(self, block_folder='./blocks1/'):
+        self.invert_index = CosineSimilaritySearch(block_folder , data)
         self.queryparser = QueryParser()
 
     def search(self, query):
@@ -67,39 +68,28 @@ class MusicSearch:
         filter_results = []
         for result in results.itertuples(index=False):
             filtered_result = {}
-            if "lyrics" in columns:
-                filtered_result["lyrics"] = result.lyrics
             if "title" in columns:
-                filtered_result["title"] = result.track_name
+                filtered_result["title"] = result.Song_Title
             if "artist" in columns:
-                filtered_result["artist"] = result.track_artist
-            if "album" in columns:
-                filtered_result["album"] = result.track_album_name
-            if "popularity" in columns:
-                filtered_result["popularity"] = result.track_popularity
-            if "release_date" in columns:
-                filtered_result["release_date"] = result.track_album_release_date
-            if "playlist_name" in columns:
-                filtered_result["playlist_name"] = result.playlist_name
-            if "album_date" in columns:
-                filtered_result["album_date"] = result.track_album_release_date
-            if "Similarity" in columns:
-                filtered_result["Similarity"] = result.Cosine_Similarity_Score
+                filtered_result["artist"] = result.Artist
+            if "lyrics" in columns:
+                filtered_result["lyrics"] = result.Lyrics
+            if "similarity" in columns:
+                filtered_result["similarity"] = result.Similarity_Score
             
             filter_results.append(filtered_result)
-
 
         return filter_results , tiempo_ejecucion
 
 
-'''# Prueba del parser
-query = "select Similarity from Audio where content liketo 'yea you just can't walk away' limit 1"
 
-block_folder = './blocks/'
+'''# Prueba del parser
+query = "select * from Audio where content liketo 'mayor que yo' limit 1"
+
+block_folder = './blocks1/'
 
 # Prueba de la búsqueda
 search_engine = MusicSearch(block_folder)
 search_results = search_engine.search(query)
 print("Top K documentos más similares:")
-print(search_results)
-'''
+print(search_results)'''

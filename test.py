@@ -1,159 +1,191 @@
-from spimy2 import BSBIndexConstuction
-import pandas as pd
-from spimi import SPIMI
 
-import math
+from spimi import SPIMI
+import pandas as pd
+
+# testeo
+path = './dataset/'
+data_path = path + 'spotify_songs.csv'
+
+data = pd.read_csv(data_path)
+
+
+data1000 = data.head(1000)
+data5000 = data.head(5000)
+data10000 = data.head(10000)
+data18000 = data
+
+
+spimi = SPIMI(size_per_block=10240*4,
+              path_block= './.temp1000/',
+              output_folder='./blocks1000/',
+              ram_limit=1024*1024*1024*4,
+              size_per_block_out= 1024*4)
+
+#spimi.BSBIndexConstuction(data1000)
+
+
+spimi = SPIMI(size_per_block=10240*4,
+              path_block= './.temp5000/',
+              output_folder='./blocks5000/',
+              ram_limit=1024*1024*1024*4,
+              size_per_block_out= 1024*4)
+
+#spimi.BSBIndexConstuction(data5000)
+
+spimi = SPIMI(size_per_block=10240*4,
+              path_block= './.temp10000/',
+              output_folder='./blocks10000/',
+              ram_limit=1024*1024*1024*4,
+              size_per_block_out= 1024*4)
+
+#spimi.BSBIndexConstuction(data10000)
+
+spimi = SPIMI(size_per_block=10240*4,
+              path_block= './.temp18000/',
+              output_folder='./blocks18000/',
+              ram_limit=1024*1024*1024*4,
+              size_per_block_out= 1024*4)
+
+#spimi.BSBIndexConstuction(data18000)
+
+
+import numpy as np
 import os
+import re
 from collections import defaultdict
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
-import regex as re
-
 import pandas as pd
-import csv
+import bisect
 
-
-path = './dataset/'
-data_path = path + 'spotify_songs_test2.csv'
-
-data = pd.read_csv(data_path, index_col=None)
-
-spimi = SPIMI(size_per_block=10240*4,
-              output_folder='./blocks/',
-              ram_limit=1024*1024*1024*4,
-              size_per_block_out= 1024*5.9)
-
-#spimi.BSBIndexConstuction(data)
 
 
 class CosineSimilaritySearch:
-    def __init__(self, block_folder):
+    def __init__(self, block_folder, data):
         self.block_folder = block_folder
-        self.stopwords = stopwords.words('spanish')  # ajusta el idioma si es necesario
-        self.stemmer = SnowballStemmer(language='spanish')  # ajusta el idioma si es necesario
+        self.data = data
+        self.num_docs = len(data)
+        self.language_map = {
+            'es': 'spanish',
+            'en': 'english',
+            'fr': 'french',
+            'de': 'german',
+            'it': 'italian'
+        }
 
-    def preprocess(self, text):
-        """Preprocesa el texto: limpieza, stopword removal, stemming."""
+    def preprocess(self, text, lang='en'):
+        lang = self.language_map.get(lang, 'english')
+        stop_words = stopwords.words(lang)
+        stemmer = SnowballStemmer(language=lang)
+
         text = text.lower()
         text = re.sub(r'[^a-zA-Z0-9_À-ÿ]', ' ', text)
-        words = [word for word in text.split() if word not in self.stopwords]
-        return [self.stemmer.stem(word) for word in words]
 
-    def calculate_query_vector(self, query_terms, df_dict, num_docs):
-        """Calcula el vector TF-IDF para la consulta."""
+        words = []
+        for word in text.split():
+            if word not in stop_words:
+                words.append(stemmer.stem(word))
+
+        return words
+
+    def calculate_query_vector(self, query_terms, df_dict):
         tf_query = defaultdict(int)
         for term in query_terms:
             tf_query[term] += 1
-        
+
         query_vector = {}
         for term, tf in tf_query.items():
-            idf = math.log((num_docs / df_dict[term])) if term in df_dict else 0
+            idf = np.log((self.num_docs / df_dict[term])) if term in df_dict and df_dict[term] > 0 else 0
             query_vector[term] = tf * idf
+            print(f"Término: {term}, TF: {tf}, IDF: {idf}, TF-IDF: {query_vector[term]}")  # Depuración
         return query_vector
-
+    
     def load_block_terms(self, query_terms):
-        """Carga solo los términos relevantes de los bloques para la consulta."""
         term_postings = {}
         df_dict = {}
-        num_docs = 0
 
         for filename in os.listdir(self.block_folder):
             with open(os.path.join(self.block_folder, filename), 'r') as file:
                 for line in file:
                     term, rest = line.split(" (DF: ")
-                    if term not in query_terms:
-                        continue
-                    
-                    df, postings = rest.split("): ")
-                    df = int(df)
-                    df_dict[term] = df
-                    num_docs += df
-                    
-                    term_postings[term] = []
-                    postings_list = postings.strip().split("), (")
-                    for posting in postings_list:
-                        doc_id, tf = map(int, posting.strip("()").split(", "))
-                        term_postings[term].append((doc_id, tf))
-        return term_postings, df_dict, num_docs
+                    if self.binary_search(query_terms, term):
+                        df, postings = rest.split("): ")
+                        df = int(df)
+                        df_dict[term] = df
+                        
+                        term_postings[term] = []
+                        postings_list = postings.strip().split("), (")
+                        for posting in postings_list:
+                            doc_id, tf = map(int, posting.strip("()").split(", "))
+                            term_postings[term].append((doc_id, tf))
+        return term_postings, df_dict
 
-    def cosine_similarity(self, query_vector, doc_vectors):
-        """Calcula la similitud de coseno entre la consulta y cada documento, con depuración."""
+    def binary_search(self, sorted_list, item):
+        index = bisect.bisect_left(sorted_list, item)
+        return index < len(sorted_list) and sorted_list[index] == item
+
+    def cosine_similarity(self, query_vector, term_postings):
         doc_scores = defaultdict(float)
-        query_norm = math.sqrt(sum(weight**2 for weight in query_vector.values()))
-        
-        # Acumula pesos para cada documento y muestra detalles para depuración
-        print("Vector de la consulta:", query_vector)
-        for term, query_weight in query_vector.items():
-            # Verificar si el término existe en doc_vectors antes de intentar acceder a él
-            if term in doc_vectors:
-                for doc_id, doc_tf in doc_vectors[term]:
-                    # Calcula el peso del término en el documento y lo acumula
-                    doc_weight = doc_tf * query_weight
-                    doc_scores[doc_id] += doc_weight
-                    print(f"Documento {doc_id} - Término '{term}': TF={doc_tf}, Peso en doc={doc_weight}, Acumulado={doc_scores[doc_id]}")
+        query_norm = np.sqrt(np.sum(np.square(list(query_vector.values()))))
 
-        # Calcular norma del vector de cada documento y similitud de coseno
-        for doc_id in doc_scores:
-            # Calcular la norma del documento usando solo términos en query_vector
-            doc_norm = math.sqrt(
-                sum(
-                    (doc_tf * query_vector.get(term, 0))**2 
-                    for term in query_vector
-                    for doc_id_in_posting, doc_tf in doc_vectors.get(term, [])
-                    if doc_id_in_posting == doc_id
-                )
-            )
-            if doc_norm != 0:
-                doc_scores[doc_id] = doc_scores[doc_id] / (query_norm * doc_norm)
+        # Construcción de vectores de documentos
+        doc_vectors = defaultdict(lambda: defaultdict(float))
+        for term, query_weight in query_vector.items():
+            if term in term_postings:
+                for doc_id, tf in term_postings[term]:
+                    tf_weight = tf * query_weight
+                    doc_vectors[doc_id][term] += tf_weight
+                    print(f"Doc: {doc_id}, Término: {term}, TF: {tf}, Peso: {tf_weight}")  # Depuración
+
+        # Calcular similitud coseno
+        for doc_id, terms in doc_vectors.items():
+            dot_product = sum(query_vector[term] * terms[term] for term in terms if term in query_vector)
+            doc_norm = np.sqrt(sum((terms[term])**2 for term in terms))
+            if query_norm != 0 and doc_norm != 0:
+                doc_scores[doc_id] = dot_product / (query_norm * doc_norm)
             else:
-                doc_scores[doc_id] = 0
-            print(f"Documento {doc_id} - Similaridad de coseno: {doc_scores[doc_id]}")
-        
-        # Ordena y devuelve los resultados
+                doc_scores[doc_id] = 0.0
+            print(f"Doc: {doc_id}, Producto punto: {dot_product}, Norma consulta: {query_norm}, Norma documento: {doc_norm}, Similitud: {doc_scores[doc_id]}")  # Depuración
+
+        print(doc_scores)
+
         return sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)
 
-
-    def get_top_k_similar_documents(self, query, k=5):
-        # Procesar la consulta y realizar la búsqueda
-        query_terms = self.preprocess(query)
-        term_postings, df_dict, num_docs = self.load_block_terms(query_terms)
-        query_vector = self.calculate_query_vector(query_terms, df_dict, num_docs)
-        doc_scores = self.cosine_similarity(query_vector, term_postings)
+    def get_top_k_similar_documents(self, query, lang='en', k=5):
+        query_terms = self.preprocess(query, lang=lang)
+        print(f"Términos de la consulta procesados: {query_terms}")
+        term_postings, df_dict = self.load_block_terms(query_terms)
+        query_vector = self.calculate_query_vector(query_terms, df_dict)
         
-        # Obtener los k documentos mas similares
-        top_k_docs = doc_scores[:k]
-        top_k_indices = [doc_id for doc_id, _ in top_k_docs]  # Obtén solo los indices de los documentos 
-        # Obtener los datos de los documentos mas similares con sus metadatos
-        top_k_data = data.iloc[top_k_indices][['track_name', 'track_artist', 'lyrics' ,'track_popularity' ,'track_album_name' ,'track_album_release_date' , 'playlist_name']].copy()
-        top_k_data['Cosine_Similarity_Score'] = [score for _, score in top_k_docs]  # Agregar las puntuaciones
+        doc_scores = self.cosine_similarity(query_vector, term_postings)
+        doc_scores = sorted(doc_scores, key=lambda x: x[1], reverse=True)[:k]
 
-        top_k_data.index = range(1, k + 1)
-        return top_k_data
+        results = []
+        for doc_id, score in doc_scores:
+            try:
+                doc_details = self.data.iloc[doc_id].to_dict()
+                doc_details["Cosine Similarity Score"] = score
+                results.append(doc_details)
+            except IndexError:
+                print(f"El documento con ID {doc_id} no está disponible en los datos.")
 
-            
-    def search(self, query):
-        query_terms = self.preprocess(query)
-        term_postings, df_dict, num_docs = self.load_block_terms(query_terms)
-        query_vector = self.calculate_query_vector(query_terms, df_dict, num_docs)
+        results_df = pd.DataFrame(results)
+        results_df = results_df[["track_name", "track_artist", "lyrics", "Cosine Similarity Score"]]
+        results_df.columns = ["Song_Title", "Artist", "Lyrics", "Similarity_Score"]
+        results_df.index = range(1, len(results) + 1)
+        return results_df
+
+    def search(self, query, lang='en'):
+        query_terms = self.preprocess(query, lang=lang)
+        term_postings, df_dict = self.load_block_terms(query_terms)
+        query_vector = self.calculate_query_vector(query_terms, df_dict)
         return self.cosine_similarity(query_vector, term_postings)
 
 
+
 '''
-block_folder = './blocks/'
-search_engine = CosineSimilaritySearch(block_folder)
-results_df = search_engine.get_top_k_similar_documents("yea you just can't walk away", k=5)
+block_folder = './blocks1/'
+search_engine = CosineSimilaritySearch(block_folder, data)
+results_df = search_engine.get_top_k_similar_documents("mayor que yo", lang='es', k=5)
 print("Top K documentos más similares:")
-print(results_df)
-'''
-'''
-k = 5 
-
-254         In Between Days - 2006 Remaster        The Cure  The Head on the Door (Deluxed Edition)
-423                             All The Way       Timeflies                             All The Way
-457  Make It Better (feat. Smokey Robinson)  Anderson .Paak  Make It Better (feat. Smokey Robinson)
-997          Tell Me What You Want Me to Do  Tevin Campbell                              T.E.V.I.N.
-769                   Wake Up - Sondr Remix  Chelsea Cutler                       Wake Up (Remixes)
-
-
-
-'''
+print(results_df)'''
