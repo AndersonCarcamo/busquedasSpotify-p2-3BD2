@@ -267,7 +267,7 @@ class SPIMI:
                     found = False
                     for i, (existing_term, existing_df, existing_file_id, existing_posting_block) in enumerate(heap):
                         if existing_term == term:
-                            existing_df += df
+                            # existing_df += df
                             current_block = existing_posting_block
                             while current_block.next_block:
                                 current_block = current_block.next_block
