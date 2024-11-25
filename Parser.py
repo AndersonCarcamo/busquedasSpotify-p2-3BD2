@@ -58,7 +58,7 @@ class MusicSearch:
         limit = int(parsed_query.get("limit", 5))
 
         # Realizar la búsqueda usando el valor de LIMIT
-        results = self.invert_index.get_top_k_similar_documents(search_text, k=limit)
+        results = self.invert_index.get_top_k_similar_documents(search_text, lang='es', k=limit)
         tiempo_ejecucion = (time.time() - start_time) * 1000 
 
         
@@ -83,8 +83,8 @@ class MusicSearch:
 
 
 
-'''# Prueba del parser
-query = "select * from Audio where content liketo 'mayor que yo' limit 1"
+# Prueba del parser
+query = "select * from Audio where content liketo 'mayor que yo' limit 5"
 
 block_folder = './blocks1/'
 
@@ -92,4 +92,4 @@ block_folder = './blocks1/'
 search_engine = MusicSearch(block_folder)
 search_results = search_engine.search(query)
 print("Top K documentos más similares:")
-print(search_results)'''
+print(search_results)

@@ -183,9 +183,9 @@ class CosineSimilaritySearch:
 
 
 
-'''
+
 block_folder = './blocks1/'
 search_engine = CosineSimilaritySearch(block_folder, data)
 results_df = search_engine.get_top_k_similar_documents("mayor que yo", lang='es', k=5)
 print("Top K documentos más similares:")
-print(results_df)'''
+print(results_df)
