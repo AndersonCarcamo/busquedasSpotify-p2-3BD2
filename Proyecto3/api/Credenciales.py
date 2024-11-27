@@ -1,6 +1,9 @@
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 
+
+
+
+
+#colocar en la terminal el siguiente comando para obtener el token de acceso
 '''
 curl -X POST "https://accounts.spotify.com/api/token" \
      -H "Content-Type: application/x-www-form-urlencoded" \
@@ -8,10 +11,11 @@ curl -X POST "https://accounts.spotify.com/api/token" \
 
 '''
 
+## asi deberia salir en la terminal : 
 {
     "access_token":"BQCDLOECS-Ct-qHQ5zrM8gmvXK7SkIQJaI73ugJLF52FIPuwzCnCna3yFAXFH0RjT-jCy4TsIk4mYd4cqhKArfB8VYWlTB6Z4sE1lyFsLdwmiG35JrU",
     "token_type":"Bearer",
-    "expires_in":3600
+    "expires_in":3600 
 }
 
 

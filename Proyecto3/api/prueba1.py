@@ -1,58 +1,33 @@
-import requests 
-from django.http import JsonResponse
-from datetime import datetime
+import requests
 
 
-
-def get_artist(path):
-    url = "https://api.spotify.com/v1/artists/" + path 
-    header = {
-          'Authorization' : 'Bearer BQAOAOz307XVnW1ypci9z0l_UlgG3En4f-spT0b11ispCIFq7TJj1JnCX-FMTnj4ACR9u8t1GsVp35NIhsKs1OBSUlBO6pAcAT0OBrb9XkLzuhAPV6g'
-    }
-
-    response = requests.get(url, headers=header )
-    try:
-        return response.json()
-    except requests.exceptions.HTTPError as e:
-        return JsonResponse({"error": str(e)})
-
-#for i in get_artist("0OdUWJ0sBjDrqHygGUXeCF"):
-#    print(i)
-
-def get_track(track_id):
-    url = f"https://api.spotify.com/v1/tracks/{track_id}"  # Usamos el ID de la pista
-    header = {
-        'Authorization': 'Bearer BQAOAOz307XVnW1ypci9z0l_UlgG3En4f-spT0b11ispCIFq7TJj1JnCX-FMTnj4ACR9u8t1GsVp35NIhsKs1OBSUlBO6pAcAT0OBrb9XkLzuhAPV6g'
-    }
-
-    response = requests.get(url, headers=header)
-    try:
-        return response.json()
-    except requests.exceptions.HTTPError as e:
-        return JsonResponse({"error": str(e)})
-
-track_data = get_track("11dFghVXANMlKmJXsNCbNl")
-for key, value in track_data.items():
-    if key == "preview_url":
-        print(value)
+# Set up the endpoint URL and parameters
+url = "https://api.spotify.com/v1/albums/{id}/tracks"
+headers = {
+    "Authorization": "Bearer BQDPvhAbfIcpsme0IY8lCzvLK4MiPXEFwOl5gwIVcKi0IvFUkNORd0zBaFRBwvnKG1G4xBOxyw-Qh14UTp48cTHKycQf2_MBmqZzR5nn8eldkj6r3Y0",
+    "Content-Type": "application/json"
+}
+params = {
+    "market": "US"
+}
 
 
+# Make the request to the API
+response = requests.get(url.format(id="4aawyAB9vmqN3uQ7FjRGTy"), headers=headers, params=params)
+
+# Check if the request was successful
+if response.status_code == 200:
+    # Get the JSON data from the response
+    data = response.json()
+
+    # Loop through the tracks in the album
+    for track in data['items']:
+        # Check if the track has a preview URL
+        if 'preview_url' in track:
+            # Print the preview URL for the track
+            print(f"Preview URL for {track['name']}: {track['preview_url']}")
+
+else:
+    print(f"Request failed with status code {response.status_code}")
 
 
-
-
-    
-def get_game_info_api(id):
-    fields = "fields followers, genres ;"
-    body = fields + " where id = " + str(id) + ";"
-    data = get_projects("0OdUWJ0sBjDrqHygGUXeCF").json()
-    try:
-        return {
-            'api_id': id,
-            'followers': data["followers"],
-            'genres': data["genres"],
-        }
-    except:
-        return JsonResponse({"error": "Not found"})
-
-#print (get_game_info_api("0OdUWJ0sBjDrqHygGUXeCF"))

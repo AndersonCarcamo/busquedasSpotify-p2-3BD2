@@ -24,7 +24,7 @@ def extract_features(audio_path):
     features = {
         "rms": rmse,
         "zero_crossing_rate": Zero_crossing,
-        "tempo": tempo,
+        "tempo": tempo[0],
         "mfccs": mfccs,
         "spectral_centroids": spectral_centroids,
         "spectral_bandwidth": spectral_bandwidth,
