@@ -2,8 +2,9 @@ from pyparsing import Word, alphas, Group, CaselessLiteral, quotedString, delimi
 from test import CosineSimilaritySearch , data
 import time 
 import pandas as pd
+import postgresImp 
 
-ALL_COLUMNS = ["title", "artist", "lyrics", "similarity"]
+ALL_COLUMNS = ["doc_id", "title", "artist", "album", "release_date", "similarity"]
 
 class QueryParser:
     def __init__(self):
@@ -44,52 +45,89 @@ class QueryParser:
 
 # Clase de búsqueda
 class MusicSearch:
-    def __init__(self, block_folder='./blocks1/'):
-        self.invert_index = CosineSimilaritySearch(block_folder , data)
+    def __init__(self, block_folder='./blocks1000/' , use_db = False , db_params = None):
+        self.num_docs = self.selectData(block_folder)
+        self.invert_index = CosineSimilaritySearch(block_folder, self.num_docs , lang='es')
         self.queryparser = QueryParser()
-
+        self.use_db = use_db
+        if use_db and db_params:
+            self.db = postgresImp.PostgresPy(**db_params)
+        else:
+            self.db = None 
+    def selectData(self, block_folder):
+        folder_map = {
+            "./blocks1000/": 1000,
+            "./blocks5000/": 5000,
+            "./blocks10000/": 10000
+        }
+        print(f'cambiando a {folder_map[block_folder]}')
+        return folder_map[block_folder]
     def search(self, query):
-        start_time = time.time()
 
-        parsed_query = self.queryparser.parse_query(query)
+        parsed_query = self.queryparser.parse_query(query) 
         search_text = parsed_query["query"].strip("'")
-
-        # Obtener el valor de LIMIT si está especificado, con un valor predeterminado de 5
         limit = int(parsed_query.get("limit", 5))
-
-        # Realizar la búsqueda usando el valor de LIMIT
-        results = self.invert_index.get_top_k_similar_documents(search_text, lang='es', k=limit)
-        tiempo_ejecucion = (time.time() - start_time) * 1000 
-
-        
-        # Filtrar los resultados según las columnas solicitadas
-        columns = ALL_COLUMNS if '*' in parsed_query["columns"] else parsed_query["columns"]
-
-        filter_results = []
-        for result in results.itertuples(index=False):
-            filtered_result = {}
-            if "title" in columns:
-                filtered_result["title"] = result.Song_Title
-            if "artist" in columns:
-                filtered_result["artist"] = result.Artist
-            if "lyrics" in columns:
-                filtered_result["lyrics"] = result.Lyrics
-            if "similarity" in columns:
-                filtered_result["similarity"] = result.Similarity_Score
+#ALL_COLUMNS = ["doc_id", "title", "artist", "album", "release_date", "similarity"]
+        if(self.use_db):
+            start_time = time.time()
+            results = self.db.consulta(limit, search_text)
+            tiempo_ejecucion = (time.time() - start_time) * 1000
+            filter_results = []
+            for result in results:
+                filtered_result = {}
+                filtered_result["doc_id"] = result[0]
+                filtered_result["title"] = result[1]
+                filtered_result["artist"] = result[2]
+                filtered_result["album"] = result[3]
+                filtered_result["release_date"] = result[4]
+                filter_results.append(filtered_result)
             
-            filter_results.append(filtered_result)
+        else:
+            start_time = time.time()
+            # Realizar la búsqueda usando el valor de LIMIT
+            top_docs, results_df = self.invert_index.cosine_similarity(search_text, limit)
+            tiempo_ejecucion = (time.time() - start_time) * 1000
+
+            # Filtrar los resultados según las columnas solicitadas
+            columns = ALL_COLUMNS if '*' in parsed_query["columns"] else parsed_query["columns"]
+            filter_results = []
+
+            for _ , result in results_df.iterrows():
+                filtered_result = {}
+                if "doc_id" in columns:
+                    filtered_result["doc_id"] = result['doc_id']
+                if "title" in columns:
+                    filtered_result["title"] = result['track_name']
+                if "artist" in columns:
+                    filtered_result["artist"] = result['track_artist']
+                if "album" in columns:
+                    filtered_result["album"] = result['album_name']
+                if "release_date" in columns:
+                    filtered_result["release_date"] = result['release_date']
+                if "similarity" in columns:
+                    filtered_result["similarity"] = result['similarity']
+                
+                filter_results.append(filtered_result)
 
         return filter_results , tiempo_ejecucion
 
 
 
 # Prueba del parser
-query = "select * from Audio where content liketo 'mayor que yo' limit 5"
+query = "select * from Audio where content liketo 'love' limit 5"
 
-block_folder = './blocks1/'
+block_folder = './blocks1000/'
+'''
+# Prueba de la búsqueda postgres
+search_engine = MusicSearch(block_folder , use_db = True , db_params = {
+    "dbname":"proyect2",
+    "user":"postgres",
+    "password":"3215932112",
+    "host": "localhost",
+    "port":"5432"
+})'''
 
-# Prueba de la búsqueda
-search_engine = MusicSearch(block_folder)
+search_engine = MusicSearch(block_folder , use_db = False)
 search_results = search_engine.search(query)
-print("Top K documentos más similares:")
-print(search_results)
+for result in search_results:
+    print(result)
