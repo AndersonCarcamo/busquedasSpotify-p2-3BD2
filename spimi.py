@@ -162,7 +162,6 @@ class SPIMI:
 
         open_files = {file_id: open(file_path, 'r') for file_id, file_path in block_files.items()}
         input_buffers = {}
-        current_ram_usage = 0
         max_memory_per_block = (self.max_ram_limit - self.block_size_limit) // len(block_files)
         merged_files = []
         heap = []
