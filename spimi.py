@@ -126,7 +126,7 @@ class SPIMI:
         term, rest = line.split(" (DF: ")
         df, postings = rest.split("): ")
         df = int(df)
-        posting_block = PostingBlock()
+        posting_block = PostingBlock(max_size=50000) # manejaremos todo con un solo posting_block
         postings_list = postings.strip("()").split("), (")
         for posting in postings_list:
             doc_id, tf = map(int, posting.strip("()").split(", "))
@@ -160,51 +160,71 @@ class SPIMI:
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
 
-        open_files = {file_id: open(file_path, 'r') for file_id, file_path in block_files.items()}
+        # open_files = {file_id: open(file_path, 'r') for file_id, file_path in block_files.items()}
+
         input_buffers = {}
         max_memory_per_block = (self.max_ram_limit - self.block_size_limit) // len(block_files)
         merged_files = []
         heap = []
+        
 
-        # Cargar los buffers iniciales y añadir al heap con fusión de términos duplicados
-        for file_id, file in open_files.items():
-            buffer = []
-            buffer_size = 0
-            while buffer_size < max_memory_per_block:
-                line = file.readline().strip()
-                if not line:
-                    break
-                term, df, posting_block = self.parse_block_line(line)
-                buffer.append((term, df, posting_block))
-                buffer_size += sys.getsizeof(term) + sys.getsizeof(df) + sys.getsizeof(posting_block)
-            
-            input_buffers[file_id] = buffer
-            
-            # Insertar elementos del buffer en el heap con fusión continua
-            for term, df, posting_block in buffer:
-                found = False
-                for i, (existing_term, existing_df, existing_file_id, existing_posting_block) in enumerate(heap):
-                    if existing_term == term:
-                        # existing_df += df
-                        current_block = existing_posting_block
-                        while current_block.next_block:
-                            current_block = current_block.next_block
-                        
-                        for doc, tf in posting_block.doc_dict.items():
-                            if doc in current_block.doc_dict:
-                                current_block.doc_dict[doc] += tf
-                            else:
-                                if current_block.is_full():
-                                    new_block = PostingBlock()
-                                    current_block.next_block = new_block
-                                    current_block = new_block
-                                current_block.add_doc(doc, tf)
-                                existing_df += 1
-                        heap[i] = (existing_term, existing_df, existing_file_id, existing_posting_block)
-                        found = True
+        # abrir los bloques por grupos
+        max_open_files = 100
+        file_groups = [dict(list(block_files.items())[i:i + max_open_files]) for i in
+                       range(0, len(block_files), max_open_files)]
+
+        file_positions = {}
+
+        for file_group in file_groups:
+            open_files = {file_id: open(file_path, 'r') for file_id, file_path in file_group.items()}
+            # Cargar los buffers iniciales y añadir al heap con fusión de términos duplicados
+            for file_id, file in open_files.items():
+                file_positions[file_id] = file.tell()
+
+            for file_id, file in open_files.items():
+                buffer = []
+                buffer_size = 0
+                while buffer_size < max_memory_per_block:
+                    line = file.readline().strip()
+                    if not line:
                         break
-                if not found:
+                    term, df, posting_block = self.parse_block_line(line)
+                    buffer.append((term, df, posting_block))
+                    buffer_size += sys.getsizeof(term) + sys.getsizeof(df) + sys.getsizeof(posting_block)
+
+                input_buffers[file_id] = buffer
+
+                # Insertar elementos del buffer en el heap
+                for term, df, posting_block in buffer:
+                    '''
+                    Esto ya no es necesario pues tiene un costo alto por la busqueda lineal
+                    found = False
+                    for i, (existing_term, existing_df, existing_file_id, existing_posting_block) in enumerate(heap):
+                        if existing_term == term:
+                            # existing_df += df
+                            current_block = existing_posting_block
+                            while current_block.next_block:
+                                current_block = current_block.next_block
+
+                            for doc, tf in posting_block.doc_dict.items():
+                                if doc in current_block.doc_dict:
+                                    current_block.doc_dict[doc] += tf
+                                else:
+                                    if current_block.is_full():
+                                        new_block = PostingBlock()
+                                        current_block.next_block = new_block
+                                        current_block = new_block
+                                    current_block.add_doc(doc, tf)
+                                    existing_df += 1
+                            heap[i] = (existing_term, existing_df, existing_file_id, existing_posting_block)
+                            found = True
+                            break
+                    if not found:
+                        heapq.heappush(heap, (term, df, file_id, posting_block))
+                    '''
                     heapq.heappush(heap, (term, df, file_id, posting_block))
+            for file in open_files.values():
+                file.close()
 
         block_id = 0
         output_terms = {}
@@ -217,23 +237,23 @@ class SPIMI:
             # Fusionar postings si el término ya existe en output_terms
             if term in output_terms:
                 existing_df, existing_posting_block = output_terms[term]
-                output_terms[term] = (existing_df + df, existing_posting_block)
-                current_block = existing_posting_block
-                while current_block.next_block:
-                    current_block = current_block.next_block
-                
+
+                # se tendra solo un posting_block asi que analizare en ese posting_block
                 for doc, tf in posting_block.doc_dict.items():
-                    if doc in current_block.doc_dict:
-                        current_block.doc_dict[doc] += tf
+                    if doc in existing_posting_block.doc_dict:
+                        existing_posting_block.doc_dict[doc] += tf
                     else:
+                        '''
                         if current_block.is_full():
                             new_block = PostingBlock()
                             current_block.next_block = new_block
                             current_block = new_block
-                        current_block.add_doc(doc, tf)
+                        '''
+                        existing_posting_block.add_doc(doc, tf)
                         existing_df += 1
                 additional_postings_size = len(', '.join([f"({doc}, {tf})" for doc, tf in posting_block.doc_dict.items()]))
                 current_output_size += additional_postings_size
+                output_terms[term] = (existing_df, existing_posting_block)
             else:
                 output_terms[term] = (df, posting_block)
                 postings_str = ', '.join([f"({doc}, {tf})" for doc, tf in posting_block.doc_dict.items()])
@@ -250,19 +270,23 @@ class SPIMI:
 
             # Recargar el buffer si se queda vacío
             if not input_buffers[file_id]:
-                buffer = []
-                buffer_size = 0
-                while buffer_size < max_memory_per_block:
-                    line = open_files[file_id].readline().strip()
-                    if not line:
-                        break
-                    term, df, posting_block = self.parse_block_line(line)
-                    buffer.append((term, df, posting_block))
-                    buffer_size += sys.getsizeof(term) + sys.getsizeof(df) + sys.getsizeof(posting_block)
-                input_buffers[file_id] = buffer
+                with open(block_files[file_id], 'r') as file:
+                    file.seek(file_positions[file_id])
+                    buffer = []
+                    buffer_size = 0
+                    while buffer_size < max_memory_per_block:
+                        line = open_files[file_id].readline().strip()
+                        if not line:
+                            break
+                        term, df, posting_block = self.parse_block_line(line)
+                        buffer.append((term, df, posting_block))
+                        buffer_size += sys.getsizeof(term) + sys.getsizeof(df) + sys.getsizeof(posting_block)
+                    input_buffers[file_id] = buffer
+                    file_positions[file_id] = file.tell()
 
                 # Agregar nuevos términos del buffer al heap con fusión de duplicados
                 for term, df, posting_block in buffer:
+                    '''
                     found = False
                     for i, (existing_term, existing_df, existing_file_id, existing_posting_block) in enumerate(heap):
                         if existing_term == term:
@@ -287,6 +311,8 @@ class SPIMI:
                             break
                     if not found:
                         heapq.heappush(heap, (term, df, file_id, posting_block))
+                    '''
+                    heapq.heappush(heap, (term, df, file_id, posting_block))
 
         # Escribir cualquier término restante en el último bloque
         if output_terms:
