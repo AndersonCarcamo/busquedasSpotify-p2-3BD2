@@ -1,8 +1,10 @@
 from pyparsing import Word, alphas, Group, CaselessLiteral, quotedString, delimitedList, alphanums, Or, Literal, Optional, nums , Suppress
-from Proyecto2.CreateBlocks import CosineSimilaritySearch , data
+from test import CosineSimilaritySearch , data
 import time 
 import pandas as pd
-import postgresImp 
+import setting.postgresImp as postgresImp
+import numpy as np
+
 
 ALL_COLUMNS = ["doc_id", "title", "artist", "album", "release_date", "similarity"]
 
@@ -67,7 +69,6 @@ class MusicSearch:
         parsed_query = self.queryparser.parse_query(query) 
         search_text = parsed_query["query"].strip("'")
         limit = int(parsed_query.get("limit", 5))
-#ALL_COLUMNS = ["doc_id", "title", "artist", "album", "release_date", "similarity"]
         if(self.use_db):
             start_time = time.time()
             results = self.db.consulta(limit, search_text)
@@ -117,16 +118,6 @@ class MusicSearch:
 query = "select * from Audio where content liketo 'love' limit 5"
 
 block_folder = './blocks1000/'
-'''
-# Prueba de la búsqueda postgres
-search_engine = MusicSearch(block_folder , use_db = True , db_params = {
-    "dbname":"proyect2",
-    "user":"postgres",
-    "password":"3215932112",
-    "host": "localhost",
-    "port":"5432"
-})'''
-
 search_engine = MusicSearch(block_folder , use_db = False)
 search_results = search_engine.search(query)
 for result in search_results:

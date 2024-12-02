@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 Proyecto3/Canciones/data
+setting/raw_tracks.csv
 
 # C extensions
 *.so
