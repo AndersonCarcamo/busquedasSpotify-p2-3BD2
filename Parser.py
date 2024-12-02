@@ -1,5 +1,5 @@
 from pyparsing import Word, alphas, Group, CaselessLiteral, quotedString, delimitedList, alphanums, Or, Literal, Optional, nums , Suppress
-from test import CosineSimilaritySearch , data
+from Proyecto2.CreateBlocks import CosineSimilaritySearch , data
 import time 
 import pandas as pd
 import postgresImp 

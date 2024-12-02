@@ -8,9 +8,26 @@ Proyecto3/Canciones/data
 # C extensions
 *.so
 
+#bloques
+blocks1000/
+Proyecto2/blocks1000/
+blocks5000/
+Proyecto2/blocks5000/
+blocks10000/
+Proyecto2/blocks10000/
+blocks18000/
+Proyecto2/blocks18000/
+
+# batchs
+Proyecto3/extractFeatures/batchs2/
+
 # Distribution / packaging
 .Python
 build/
+fma_medium/
+Proyecto3/fma_medium/
+fma_metadata/
+Proyecto3/fma_metadata/
 develop-eggs/
 dist/
 downloads/
