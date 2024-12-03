@@ -6,7 +6,6 @@ import pickle
 # Ruta principal
 base_path = '../../fma_medium'
 
-
 # Función para extraer MFCC con promedio para reducir las caracteristicas a 1 dimension por caracteristicas
 def extract_mfcc(file_path, n_mfcc=128):
     try:
